@@ -1,2 +1,125 @@
-Hello World
-Bye World
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <title>Insurance Calculator</title>
+    </head>
+    <body>
+        <canvas id="incomeCanvas" width="810" height="800" onmousemove="getInfo(event)" style="border: 1px #000000 solid;"></canvas>
+        <br>
+        <span>每年支付</span>
+        <input placeholder="900" id="payInput">
+        <span>每三年获得</span>
+        <input placeholder="800" id="fundInput">
+        <span>保险金额</span>
+        <input placeholder="10000" id="endInput">
+        <span>折现率</span>
+        <input placeholder="2.5" id="rateInput">
+        <span>%</span>
+        <p id="yearInfo"></p>
+        <button onclick="draw()">计算</button>
+    </body>
+    <script>
+        let c = document.getElementById("incomeCanvas");
+        let incomeList = [];
+        let init = false;
+        let maxHeight = 0;
+        let rate = 1.025;
+        let year = 80;
+        let payYear = 20;
+        let pay = 900;
+        let fund = 800;
+        let end = 10000;
+        let payList = [];
+        let fundList = [];
+        let endList = [];
+        let cxt = c.getContext("2d");
+        let getInfo = function(e){
+            x = e.clientX;
+            if(init && x > 10){
+                let ind = Math.ceil(x / 10) - 2;
+                document.getElementById("yearInfo").innerText = "第" + ind + "年年初 收益为:" + incomeList[ind].toFixed(2) + "元";
+            }
+        }
+        let calculate = function(){
+            let reg = /^\d+(\.\d+)?$/;
+            if(reg.test(document.getElementById("payInput").value)){
+                pay = document.getElementById("payInput").value;
+            }
+            else{
+                pay = 900;
+            }
+            if(reg.test(document.getElementById("fundInput").value)){
+                fund = document.getElementById("fundInput").value;
+            }
+            else{
+                fund = 800;
+            }
+            if(reg.test(document.getElementById("endInput").value)){
+                end = document.getElementById("endInput").value;
+            }
+            else{
+                end = 10000;
+            }
+            if(reg.test(document.getElementById("rateInput").value)){
+                rate = document.getElementById("rateInput").value / 100 + 1;
+            }
+            else{
+                rate = 1.025;
+            }
+            incomeList = [pay + end / 10];
+            let cur = 0;
+            payList = [pay];
+            fundList = [fund];
+            endList = [end];
+            for(let i = 1; i <= year; i++){
+                if(i < payYear){
+                    payList.push(payList[i - 1] / rate);
+                }
+                else{
+                    payList.push(0);
+                }
+                fundList.push(fundList[i - 1] / rate);
+                endList.push(endList[i - 1] / rate);
+            }
+            fundList[1] = 0;
+            for(let i = 0; i <= year; i++){
+                if(i % 3 != 1){
+                    fundList[i] = 0;
+                }
+            }
+            for(let i = 0; i <= year; i++){
+                cur -= payList[i];
+                cur += fundList[i];
+                if(i == 0) continue;
+                cur += endList[i];
+                incomeList.push(cur);
+                if(Math.abs(cur) > maxHeight){
+                    maxHeight = Math.abs(cur);
+                }
+                cur -= endList[i];
+            }
+        }
+        let transfer = function(income){
+            let res = (1 - income / maxHeight) * 400 + 10;
+            return res;
+        }
+        let draw = function(){
+            init = true;
+            cxt.clearRect(0, 0, 820, 800);
+            calculate();
+            cxt.fillStyle = "#000000";
+            cxt.beginPath();
+            cxt.lineWidth = "5";
+            cxt.strokeStyle = "blue";
+            cxt.moveTo(0, 410);
+            cxt.lineTo(810, 410);
+            cxt.stroke();
+            for(let i = 0; i < incomeList.length; i++){
+                cxt.beginPath();
+                cxt.arc(i * 10 + 5, transfer(incomeList[i]), 5, 0, Math.PI*2, true);
+                cxt.closePath();
+                cxt.fill();
+            }
+        }
+    </script>
+</html>
